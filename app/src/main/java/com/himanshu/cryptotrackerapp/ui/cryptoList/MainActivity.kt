@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,7 +67,9 @@ class MainActivity : ComponentActivity() {
                         val itemList = list.data?.cryptoCurrencyList ?: arrayListOf()
 
                         items(itemList) { item ->
-                            CryptoCard(item)
+                            CryptoCard(item){
+                                Log.i(TAG,"Item clicked ${it?.name}")
+                            }
                         }
                     }
                 }
@@ -78,12 +81,13 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalCoilApi::class)
 @Composable
-fun CryptoCard(item: CryptoCurrencyListItem? = null) {
+fun CryptoCard(item: CryptoCurrencyListItem? = null , onCardClick: (CryptoCurrencyListItem?) -> Unit) {
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
+            .clickable { onCardClick(item) }
             .padding(horizontal = 15.dp, vertical = 10.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Gray),
@@ -92,8 +96,6 @@ fun CryptoCard(item: CryptoCurrencyListItem? = null) {
     ) {
 
         val url = "https://s2.coinmarketcap.com/static/img/coins/128x128/${item!!.id}.png"
-        Log.i(TAG, "URL is $url")
-
         Image(
             painter = rememberImagePainter(data = url),
             modifier = Modifier
@@ -106,8 +108,8 @@ fun CryptoCard(item: CryptoCurrencyListItem? = null) {
         Column(
             modifier = Modifier
                 .wrapContentHeight()
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .padding(horizontal = 20.dp, vertical = 5.dp),
+            verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             TextCard(item.name)
@@ -148,7 +150,7 @@ fun TopBar() {
         title = {
             Text(
                 text = "Cryptocurrencies List",
-                fontSize = 25.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold
             )
         })
