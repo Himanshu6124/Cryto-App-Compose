@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,15 +19,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,24 +58,53 @@ class MainActivity : ComponentActivity() {
         setContent {
             CryptoTrackerAppTheme {
                 val viewModel: CryptoListViewModel = hiltViewModel()
-                val list by viewModel.list.collectAsState()
+                val itemList by viewModel.list.collectAsState()
+                val isLoading by viewModel.loading.collectAsState()
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    topBar = { TopBar() }
-                )
-                { innerPadding ->
+                    topBar = { TopBar() }) { innerPadding ->
 
+                    val listState = rememberLazyListState()
 
-                    LazyColumn(
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        val itemList = list.data?.cryptoCurrencyList ?: arrayListOf()
+                    if(isLoading && itemList.isEmpty()){
 
-                        items(itemList) { item ->
-                            CryptoCard(item){
-                                Log.i(TAG,"Item clicked ${it?.name}")
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            contentAlignment = Alignment.Center
+                        ){
+                            CircularProgressIndicator()
+                        }
+                    }
+                    else{
+                        LazyColumn(
+                            modifier = Modifier.padding(innerPadding), state = listState
+                        ) {
+                            items(itemList) { item ->
+                                CryptoCard(item) {
+                                    Log.i(TAG, "Item clicked ${it?.name}")
+                                }
                             }
+                        }
+                    }
+
+                    val isBottomReached by remember {
+                        derivedStateOf {
+                            val lastVisibleItemIndex =
+                                listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+                            lastVisibleItemIndex == (itemList.size - 1)
+                        }
+                    }
+                    LaunchedEffect(isBottomReached) {
+
+                        val lastVisibleItemIndex =
+                            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+
+                        if (lastVisibleItemIndex == itemList.size - 1 || itemList.isEmpty()) {
+                            Log.i(TAG, "Last index reached")
+                            viewModel.getCryptocurrencies()
                         }
                     }
                 }
@@ -81,7 +116,9 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalCoilApi::class)
 @Composable
-fun CryptoCard(item: CryptoCurrencyListItem? = null , onCardClick: (CryptoCurrencyListItem?) -> Unit) {
+fun CryptoCard(
+    item: CryptoCurrencyListItem? = null, onCardClick: (CryptoCurrencyListItem?) -> Unit
+) {
 
     Row(
         modifier = Modifier
@@ -146,12 +183,11 @@ fun TextCard(text: String) {
 @Composable
 fun TopBar() {
 
-    TopAppBar(
-        title = {
-            Text(
-                text = "Cryptocurrencies List",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold
-            )
-        })
+    TopAppBar(title = {
+        Text(
+            text = "Cryptocurrencies List",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold
+        )
+    })
 }
