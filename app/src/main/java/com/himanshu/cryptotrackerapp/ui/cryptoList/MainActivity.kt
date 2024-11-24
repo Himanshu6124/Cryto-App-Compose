@@ -22,9 +22,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -37,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -67,30 +73,38 @@ class MainActivity : ComponentActivity() {
 
                     val listState = rememberLazyListState()
 
-                    if(isLoading && itemList.isEmpty()){
+                    if (isLoading && itemList.isEmpty()) {
 
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(innerPadding),
                             contentAlignment = Alignment.Center
-                        ){
+                        ) {
                             CircularProgressIndicator()
                         }
-                    }
-                    else{
-                        LazyColumn(
-                            modifier = Modifier.padding(innerPadding), state = listState
+                    } else {
+
+                        Column(
+                            modifier = Modifier.padding(innerPadding),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            items(itemList) { item ->
-                                CryptoCard(item) {
-                                    Log.i(TAG, "Item clicked ${it?.name}")
+                            SearchBox(viewModel)
+
+                            LazyColumn(
+                                modifier = Modifier.padding(top = 5.dp), state = listState
+                            ) {
+
+                                items(itemList) { item ->
+                                    CryptoCard(item) {
+                                        Log.i(TAG, "Item clicked ${it?.name}")
+                                    }
                                 }
                             }
                         }
                     }
 
-                    val isBottomReached by remember {
+                    val isBottomReached by remember() {
                         derivedStateOf {
                             val lastVisibleItemIndex =
                                 listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
@@ -190,4 +204,30 @@ fun TopBar() {
             fontWeight = FontWeight.Bold
         )
     })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchBox(viewModel: CryptoListViewModel) {
+
+    SearchBar(
+        modifier = Modifier.wrapContentHeight(),
+        query = viewModel.searchQuery.collectAsState().value,
+        onQueryChange = { viewModel.updateSearchQuery(it) },
+        onSearch = {},
+        active = false,
+        onActiveChange = {},
+        placeholder = {
+            Text(text = "Search Cryptocurrencies")
+        },
+        trailingIcon = {
+            Icon(
+                    modifier = Modifier.size(40.dp),
+                imageVector = Icons.Filled.Search,
+                tint = MaterialTheme.colorScheme.onSurface,
+                contentDescription = null
+            )
+        },
+        content = {}
+    )
 }
